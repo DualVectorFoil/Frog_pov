@@ -48,12 +48,6 @@ class Injector {
                         ctClass.defrost()
                     }
 
-                    CtField ctField = CtField.make("public boolean mDynamicLogSwitch = true;", ctClass)
-                    ctClass.addField(ctField)
-                    if (ctClass.isFrozen()) {
-                        ctClass.defrost()
-                    }
-
                     CtMethod[] ctMethods = ctClass.getDeclaredMethods()
                     println "ctMethods count: " + ctMethods.size()
                     for (CtMethod ctMethod : ctMethods) {
@@ -69,7 +63,7 @@ class Injector {
                         String returnType = ctMethod.getReturnType().getName()
                         boolean isStatic = Modifier.isStatic(ctMethod.getModifiers())
                         StringBuffer invokeBody = new StringBuffer()
-                        invokeBody.append("\nif (mDynamicLogSwitch) {\n")
+                        invokeBody.append("\nif (com.erjiguan.frog.invokehelper.InvokeHelper.ENABLE_INVOKE) {\n")
                         if (ctMethod.getParameterTypes().size() > 0) {
                             invokeBody.append('java.lang.Object[] hookArgs = $args;\n')
                         }
