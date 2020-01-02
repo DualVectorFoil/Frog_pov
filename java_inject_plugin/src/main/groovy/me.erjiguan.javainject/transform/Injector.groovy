@@ -2,7 +2,6 @@ package me.erjiguan.javainject.transform
 
 import javassist.ClassPool
 import javassist.CtClass
-import javassist.CtField
 import javassist.CtMethod
 import org.gradle.api.Project
 
@@ -66,6 +65,14 @@ class Injector {
                         invokeBody.append("\nif (com.erjiguan.frog.invokehelper.InvokeHelper.ENABLE_INVOKE) {\n")
                         if (ctMethod.getParameterTypes().size() > 0) {
                             invokeBody.append('java.lang.Object[] hookArgs = $args;\n')
+                            invokeBody.append('java.lang.Class[] parameterTypes = new java.lang.Class[]{')
+                            for (int i = 0; i < ctMethod.getParameterTypes().size(); i++) {
+                                invokeBody.append(ctMethod.getParameterTypes()[i].getName() + '.class')
+                                if (i != ctMethod.getParameterTypes().size() - 1) {
+                                    invokeBody.append(', ')
+                                }
+                            }
+                            invokeBody.append('};\n')
                         }
 
                         if (!'void'.equals(returnType)) {
@@ -80,12 +87,20 @@ class Injector {
                             invokeBody.append('this, ')
                         }
 
+                        invokeBody.append(className + '.class, ')
+
                         invokeBody.append('\"' + className + '\"' + ', ')
 
                         invokeBody.append('\"' + methodName + '\"' + ', ')
 
                         if (ctMethod.getParameterTypes().size() > 0) {
                             invokeBody.append('hookArgs, ')
+                        } else {
+                            invokeBody.append('null, ')
+                        }
+
+                        if (ctMethod.getParameterTypes().size() > 0) {
+                            invokeBody.append('parameterTypes, ')
                         } else {
                             invokeBody.append('null, ')
                         }
@@ -107,7 +122,6 @@ class Injector {
                         println invokeBody.toString()
 
                         ctMethod.insertBefore(invokeBody.toString())
-//                        ctMethod.insertBefore('\nif (true) {\nSystem.out.println(123);\nSystem.out.println(1);\nSystem.out.println(2);\nSystem.out.println(10);}')
 
                         println ">>>>>>>>>>>>>>>>stop inject method>>>>>>>>>>>>>>>>"
                     }
