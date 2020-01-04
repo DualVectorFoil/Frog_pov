@@ -52,7 +52,7 @@ class Injector {
                     for (CtMethod ctMethod : ctMethods) {
                         println ">>>>>>>>>>>>>>>>begin inject method>>>>>>>>>>>>>>"
 
-                        if (ctClass.getName().equals("com.erjiguan.frog.invokehelper.InvokeHelper")) {
+                        if (ctClass.getName().contains("com.erjiguan.frog.invokehelper.InvokeHelper")) {
                             println ctClass.getName()
                             println ">>>>>>>>>>self not inject continue>>>>>>>>"
                             continue
@@ -62,7 +62,17 @@ class Injector {
                         String returnType = ctMethod.getReturnType().getName()
                         boolean isStatic = Modifier.isStatic(ctMethod.getModifiers())
                         StringBuffer invokeBody = new StringBuffer()
-                        invokeBody.append("\nif (com.erjiguan.frog.invokehelper.InvokeHelper.ENABLE_INVOKE) {\n")
+                        invokeBody.append('\nif (com.erjiguan.frog.invokehelper.InvokeHelper.isEnable("')
+                        invokeBody.append(className + '#')
+                        invokeBody.append(methodName + '#')
+                        for (CtClass parameterType : ctMethod.getParameterTypes()) {
+                            invokeBody.append(parameterType.getName())
+                            invokeBody.append('$')
+                        }
+                        invokeBody.append('#" + ')
+                        invokeBody.append('android.os.Process.myPid() + "#" + ')
+                        invokeBody.append('android.os.Process.myTid() + "#" + ')
+                        invokeBody.append('android.os.Process.myUid())) {\n')
                         if (ctMethod.getParameterTypes().size() > 0) {
                             invokeBody.append('java.lang.Object[] hookArgs = $args;\n')
                             invokeBody.append('java.lang.Class[] parameterTypes = new java.lang.Class[]{')
@@ -126,6 +136,7 @@ class Injector {
                         println ">>>>>>>>>>>>>>>>stop inject method>>>>>>>>>>>>>>>>"
                     }
                     ctClass.writeFile(path)
+                    ctClass.detach()
                 }
             }
         }

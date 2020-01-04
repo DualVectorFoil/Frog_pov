@@ -2,13 +2,35 @@ package com.erjiguan.frog.invokehelper;
 
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 
 public class InvokeHelper {
 
     private static final String TAG = "InvokeHelper";
 
     public static boolean ENABLE_INVOKE = true;
+
+    private static ThreadLocal<Set<String>> mInvokeMethodSet = new ThreadLocal<Set<String>>() {
+        @Nullable
+        @Override
+        protected Set<String> initialValue() {
+            return new HashSet<String>();
+        }
+    };
+
+    public static boolean isEnable(String methodInfo) {
+        if (!ENABLE_INVOKE) {
+            return false;
+        } else if (mInvokeMethodSet.get().contains(methodInfo)) {
+            mInvokeMethodSet.get().remove(methodInfo);
+            return false;
+        }
+        return true;
+    }
 
     public static Object invoke(Object self, Class<?> selfType, String selfClassName, String methodName,
                                 Object[] args, Class[] parameterTypes, int pid, int tid, int uid, long time) {
@@ -21,11 +43,12 @@ public class InvokeHelper {
             try {
                 if (self == null) {
                     method = selfType.getDeclaredMethod(methodName, parameterTypes);
-                    method.invoke(null, args);
                 } else {
                     method = self.getClass().getDeclaredMethod(methodName, parameterTypes);
-                    method.invoke(self, args);
                 }
+                addMethodInfo(selfClassName, methodName, parameterTypes, pid, tid, uid);
+                method.setAccessible(true);
+                method.invoke(self, args);
             } catch (Exception e) {
                 Log.e(TAG, "method invoke failed, selfClassName: " + selfClassName + ", err: " + e);
             }
@@ -33,16 +56,38 @@ public class InvokeHelper {
             try {
                 if (self == null) {
                     method = selfType.getDeclaredMethod(methodName);
-                    method.invoke(null);
                 } else {
                     method = self.getClass().getDeclaredMethod(methodName);
-                    method.invoke(self);
                 }
+                addMethodInfo(selfClassName, methodName, parameterTypes, pid, tid, uid);
+                method.setAccessible(true);
+                method.invoke(self);
             } catch (Exception e) {
                 Log.e(TAG, "method invoke failed, selfClassName: " + selfClassName + ", err: " + e);
             }
         }
 
         return null;
+    }
+
+    private static void addMethodInfo(String selfClassName, String methodName, Class[] parameterTypes, int pid, int tid, int uid) {
+        StringBuilder methodInfo = new StringBuilder();
+        methodInfo.append(selfClassName);
+        methodInfo.append("#");
+        methodInfo.append(methodName);
+        methodInfo.append("#");
+        if (parameterTypes != null) {
+            for (Class parameterType : parameterTypes) {
+                methodInfo.append(parameterType.getName());
+                methodInfo.append("$");
+            }
+        }
+        methodInfo.append("#");
+        methodInfo.append(pid);
+        methodInfo.append("#");
+        methodInfo.append(tid);
+        methodInfo.append("#");
+        methodInfo.append(uid);
+        mInvokeMethodSet.get().add(methodInfo.toString());
     }
 }

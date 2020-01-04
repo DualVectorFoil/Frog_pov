@@ -50,7 +50,7 @@ public class JavaInjectTransform extends Transform {
 
     @Override
     public boolean isIncremental() {
-        return false;
+        return false
     }
 
     @Override
@@ -61,6 +61,11 @@ public class JavaInjectTransform extends Transform {
                           boolean isIncremental) throws IOException, TransformException, InterruptedException {
         System.out.println("----------------Enter transform--------------")
 
+        if (!isIncremental) {
+            outputProvider.deleteAll()
+        }
+
+        // TODO incremental
         inputs.each { TransformInput input ->
             input.directoryInputs.each { DirectoryInput directoryInput ->
                 try {
