@@ -4,6 +4,8 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.esotericsoftware.kryo.Kryo;
+
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
@@ -13,13 +15,22 @@ public class InvokeHelper {
     private static final String TAG = "InvokeHelper";
 
     public static boolean ENABLE_INVOKE = true;
+    public static boolean ENABLE_LUA_SCRIPT = true;
 
-    private static ThreadLocal<Set<String>> mInvokeMethodSet = new ThreadLocal<Set<String>>() {
+    private static final ThreadLocal<Set<String>> mInvokeMethodSet = new ThreadLocal<Set<String>>() {
         @Nullable
         @Override
         protected Set<String> initialValue() {
             return new HashSet<String>();
         }
+    };
+
+    private static final ThreadLocal<Kryo> kryos = new ThreadLocal<Kryo>() {
+        protected Kryo initialValue() {
+            Kryo kryo = new Kryo();
+            // Configure the Kryo instance.
+            return kryo;
+        };
     };
 
     public static boolean isEnable(String methodInfo) {
@@ -38,7 +49,10 @@ public class InvokeHelper {
                 + ", methodName: " + methodName + ", args == null: " + (args == null)
                 + ", parameterTypes == null: " + (parameterTypes == null) + ", pid: " + pid + ", tid: " + tid + ", uid: " + uid + ", time: " + time);
 
-        Method method;
+        processBeforeMethod(self, selfType, selfClassName, methodName, args, parameterTypes);
+
+        Method method = null;
+        Object res = null;
         if (args != null && args.length > 0) {
             try {
                 if (self == null) {
@@ -48,7 +62,7 @@ public class InvokeHelper {
                 }
                 addMethodInfo(selfClassName, methodName, parameterTypes, pid, tid, uid);
                 method.setAccessible(true);
-                method.invoke(self, args);
+                res = method.invoke(self, args);
             } catch (Exception e) {
                 Log.e(TAG, "method invoke failed, selfClassName: " + selfClassName + ", err: " + e);
             }
@@ -61,13 +75,15 @@ public class InvokeHelper {
                 }
                 addMethodInfo(selfClassName, methodName, parameterTypes, pid, tid, uid);
                 method.setAccessible(true);
-                method.invoke(self);
+                res = method.invoke(self);
             } catch (Exception e) {
                 Log.e(TAG, "method invoke failed, selfClassName: " + selfClassName + ", err: " + e);
             }
         }
 
-        return null;
+        processAfterMethod(self, selfType, selfClassName, methodName, args, parameterTypes, res);
+
+        return res;
     }
 
     private static void addMethodInfo(String selfClassName, String methodName, Class[] parameterTypes, int pid, int tid, int uid) {
@@ -89,5 +105,35 @@ public class InvokeHelper {
         methodInfo.append("#");
         methodInfo.append(uid);
         mInvokeMethodSet.get().add(methodInfo.toString());
+    }
+
+    private static void processBeforeMethod(Object self, Class<?> selfType, String selfClassName, String methodName,
+                                            Object[] args, Class[] parameterTypes) {
+        writeMethodInfo(self, args, null);
+    }
+
+    private static void processAfterMethod(Object self, Class<?> selfType, String selfClassName, String methodName,
+                                           Object[] args, Class[] parameterTypes, Object res) {
+        writeMethodInfo(self, args, res);
+    }
+
+    private static void writeMethodInfo(Object self, Object[] args, Object res) {
+        if (self != null) {
+
+        }
+
+        if (args != null) {
+            for (Object arg : args) {
+
+            }
+        }
+
+        if (res != null) {
+
+        }
+    }
+
+    private static void writeObject(Object obj, String path) {
+
     }
 }
